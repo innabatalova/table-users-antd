@@ -1,7 +1,7 @@
 import { FC, ReactElement, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
-import { Table } from 'antd'
+import { Table, notification } from 'antd'
 import type { TableColumnsType } from 'antd'
 
 import type { RootState, AppDispatch } from './store/store'
@@ -40,6 +40,8 @@ const columns: TableColumnsType<User> = [
   }
 ]
 
+type NotificationType = 'info' | 'success' | 'error'
+
 const App: FC = (): ReactElement => {
   const dispatch = useDispatch<AppDispatch>()
   const { status, users, error } = useSelector((state: RootState) => state.users)
@@ -48,13 +50,48 @@ const App: FC = (): ReactElement => {
     dispatch(fetchUsers())
   }, [dispatch])
 
-  console.log(users)
+
+  const [api, contextHolder] = notification.useNotification()
+
+  const openNotificationWithIcon = (type: NotificationType, error?: {}) => {
+    switch (type) {
+      case 'info':
+        api[type]({
+          key: type,
+          message: 'Получение списка пользователей',
+          description:
+            'Получаем данные...',
+        })
+        break
+      case 'error':
+        api[type]({
+          key: type,
+          message: 'Ошибка получения данных',
+          description: `${error}`
+        })
+        break
+      case 'success':
+        setTimeout(() => {
+          api[type]({
+            key: type,
+            message: 'Получение списка пользователей',
+            description:
+              'Данные пользователей успешно получены',
+          })
+        }, 2000)
+        break
+    }
+  }
+
 
   return (
     <>
-      {status === 'pending' && <div>Загрузка...</div>}
-      {error !== null ? <div>Произошла ошибка загрузки данных</div> : <></>}
-      <Table<User> className={styles.Table} columns={columns} dataSource={users} pagination={false} />
+      {contextHolder}
+      {status === 'pending' && openNotificationWithIcon('info')}
+      {error !== null && openNotificationWithIcon('error', error)}
+      {status === 'fulfilled' && [openNotificationWithIcon('success'),
+      <Table<User> className={styles.Table} columns={columns} dataSource={users} pagination={false} />]
+      }
     </>
   )
 }
