@@ -1,8 +1,10 @@
-import { FC, ReactElement, useEffect } from 'react'
+import { FC, ReactElement, useEffect, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
-import { Table, notification } from 'antd'
-import type { TableColumnsType } from 'antd'
+import { Table, notification, Input, Space, Button } from 'antd'
+import type { TableColumnsType, InputRef, TableColumnType } from 'antd'
+import type { FilterDropdownProps } from 'antd/es/table/interface'
+import { SearchOutlined } from '@ant-design/icons'
 
 import type { RootState, AppDispatch } from './store/store'
 import { fetchUsers } from './store/slices/usersSlice'
@@ -17,28 +19,7 @@ interface User {
   avatar: string
 }
 
-const columns: TableColumnsType<User> = [
-  {
-    title: 'ID',
-    dataIndex: 'id',
-    key: 'id',
-  },
-  {
-    title: 'Email',
-    dataIndex: 'email',
-    key: 'email',
-  },
-  {
-    title: 'First name',
-    dataIndex: 'first_name',
-    key: 'first_name',
-  },
-  {
-    title: 'Last name',
-    dataIndex: 'last_name',
-    key: 'last_name',
-  }
-]
+type DataIndex = keyof User
 
 type NotificationType = 'info' | 'success' | 'error'
 
@@ -53,7 +34,7 @@ const App: FC = (): ReactElement => {
 
   const [api, contextHolder] = notification.useNotification()
 
-  const openNotificationWithIcon = (type: NotificationType, error?: {}) => {
+  const openNotificationWithIcon = (type: NotificationType, error?: {}): void => {
     switch (type) {
       case 'info':
         api[type]({
@@ -82,6 +63,90 @@ const App: FC = (): ReactElement => {
         break
     }
   }
+
+
+  const searchInput = useRef<InputRef>(null)
+
+  const handleSearch = (confirm: FilterDropdownProps['confirm']) => {
+    confirm()
+  }
+
+  const handleReset = (clearFilters: () => void) => {
+    clearFilters()
+  }
+
+  const getColumnSearchProps = (dataIndex: DataIndex): TableColumnType<User> => (
+    { filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+      <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
+        <Input
+          ref={searchInput}
+          placeholder={`Search ${dataIndex}`}
+          value={selectedKeys[0]}
+          onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+          onPressEnter={() => handleSearch(confirm)}
+          style={{ marginBottom: 8, display: 'block' }}
+        />
+        <Space>
+          <Button
+            type="primary"
+            onClick={() => handleSearch(confirm)}
+            icon={<SearchOutlined />}
+            size="small"
+            style={{ width: 90 }}
+          >
+            Search
+          </Button>
+          <Button
+            onClick={() => clearFilters && handleReset(clearFilters)}
+            size="small"
+            style={{ width: 90 }}
+          >
+            Reset
+          </Button>
+        </Space>
+      </div>
+    ),
+    filterIcon: (filtered: boolean) => (
+      <SearchOutlined style={{ color: filtered ? '#1677ff' : undefined }} />
+    ),
+    onFilter: (value, record) =>
+      record[dataIndex]
+        .toString()
+        .toLowerCase()
+        .includes((value as string).toLowerCase())
+  })
+
+  const columns: TableColumnsType<User> = [
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+      defaultSortOrder: 'ascend',
+      sorter: (a, b) => a.id - b.id,
+      ...getColumnSearchProps('id')
+    },
+    {
+      title: 'Email',
+      dataIndex: 'email',
+      key: 'email',
+      sorter: (a, b) => a.email.length - b.email.length,
+      ...getColumnSearchProps('email')
+    },
+    {
+      title: 'First name',
+      dataIndex: 'first_name',
+      key: 'first_name',
+      sorter: (a, b) => a.first_name.length - b.first_name.length,
+      ...getColumnSearchProps('first_name')
+    },
+    {
+      title: 'Last name',
+      dataIndex: 'last_name',
+      key: 'last_name',
+      sorter: (a, b) => a.last_name.length - b.last_name.length,
+      ...getColumnSearchProps('last_name')
+    }
+  ]
 
 
   return (

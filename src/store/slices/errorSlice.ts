@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit'
 
-interface ErrorState {
+export interface ErrorState {
   errorState: boolean
 }
 
