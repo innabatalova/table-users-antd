@@ -1,10 +1,10 @@
-import { FC, ReactElement, useEffect, useRef } from 'react'
+import { FC, ReactElement, useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
-import { Table, notification, Input, Space, Button } from 'antd'
-import type { TableColumnsType, InputRef, TableColumnType } from 'antd'
+import { Table, Skeleton, notification, Input, Space, Button, Dropdown } from 'antd'
+import type { TableColumnsType, TableColumnType, MenuProps } from 'antd'
 import type { FilterDropdownProps } from 'antd/es/table/interface'
-import { SearchOutlined } from '@ant-design/icons'
+import { SearchOutlined, MenuOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons'
 
 import type { RootState, AppDispatch } from './store/store'
 import { fetchUsers } from './store/slices/usersSlice'
@@ -21,7 +21,9 @@ interface User {
 
 type DataIndex = keyof User
 
-type NotificationType = 'info' | 'success' | 'error'
+type NotificationType = 'success' | 'error'
+
+type MenuItem = Required<MenuProps>['items'][number]
 
 const App: FC = (): ReactElement => {
   const dispatch = useDispatch<AppDispatch>()
@@ -36,14 +38,6 @@ const App: FC = (): ReactElement => {
 
   const openNotificationWithIcon = (type: NotificationType, error?: {}): void => {
     switch (type) {
-      case 'info':
-        api[type]({
-          key: type,
-          message: 'Получение списка пользователей',
-          description:
-            'Получаем данные...',
-        })
-        break
       case 'error':
         api[type]({
           key: type,
@@ -65,8 +59,6 @@ const App: FC = (): ReactElement => {
   }
 
 
-  const searchInput = useRef<InputRef>(null)
-
   const handleSearch = (confirm: FilterDropdownProps['confirm']) => {
     confirm()
   }
@@ -76,45 +68,68 @@ const App: FC = (): ReactElement => {
   }
 
   const getColumnSearchProps = (dataIndex: DataIndex): TableColumnType<User> => (
-    { filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
-      <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
-        <Input
-          ref={searchInput}
-          placeholder={`Search ${dataIndex}`}
-          value={selectedKeys[0]}
-          onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
-          onPressEnter={() => handleSearch(confirm)}
-          style={{ marginBottom: 8, display: 'block' }}
-        />
-        <Space>
-          <Button
-            type="primary"
-            onClick={() => handleSearch(confirm)}
-            icon={<SearchOutlined />}
-            size="small"
-            style={{ width: 90 }}
-          >
-            Search
-          </Button>
-          <Button
-            onClick={() => clearFilters && handleReset(clearFilters)}
-            size="small"
-            style={{ width: 90 }}
-          >
-            Reset
-          </Button>
-        </Space>
-      </div>
-    ),
-    filterIcon: (filtered: boolean) => (
-      <SearchOutlined style={{ color: filtered ? '#1677ff' : undefined }} />
-    ),
-    onFilter: (value, record) =>
-      record[dataIndex]
-        .toString()
-        .toLowerCase()
-        .includes((value as string).toLowerCase())
-  })
+    {
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+        <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
+          <Input
+            placeholder={`Search ${dataIndex}`}
+            value={selectedKeys[0]}
+            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={() => handleSearch(confirm)}
+            style={{ marginBottom: 8, display: 'block' }}
+          />
+          <Space>
+            <Button
+              type="primary"
+              onClick={() => handleSearch(confirm)}
+              icon={<SearchOutlined />}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Search
+            </Button>
+            <Button
+              onClick={() => clearFilters && handleReset(clearFilters)}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Reset
+            </Button>
+          </Space>
+        </div>
+      ),
+      filterIcon: (filtered: boolean) => (
+        <SearchOutlined style={{ color: filtered ? '#1677ff' : undefined }} />
+      ),
+      onFilter: (value, record) =>
+        record[dataIndex]
+          .toString()
+          .toLowerCase()
+          .includes((value as string).toLowerCase())
+    })
+
+  const onClick: MenuProps['onClick'] = (e) => {
+    console.log(e)
+  }
+
+  const items: MenuProps["items"] = [
+    {
+      key: "menu",
+      type: "group",
+      children: [
+        {
+          key: 1,
+          label: 'Редактировать',
+          icon: <EditOutlined style={{ color: "#1677ff" }} />
+        },
+        {
+          key: 2,
+          label: 'Удалить',
+          icon: <DeleteOutlined style={{ color: "#f5222d" }} />
+        },
+      ]
+    }
+  ]
 
   const columns: TableColumnsType<User> = [
     {
@@ -148,15 +163,28 @@ const App: FC = (): ReactElement => {
     }
   ]
 
+  const [menuVisible, setMenuVisible] = useState(false)
+  const [position, setPosition] = useState({x: 0,y: 0})
 
   return (
     <>
       {contextHolder}
-      {status === 'pending' && openNotificationWithIcon('info')}
+      {status === 'pending' && <div><span>Загрузка</span> <br /> <Skeleton active /></div>}
       {error !== null && openNotificationWithIcon('error', error)}
-      {status === 'fulfilled' && [openNotificationWithIcon('success'),
-      <Table<User> className={styles.Table} columns={columns} dataSource={users} pagination={false} />]
-      }
+      {status === 'fulfilled' && openNotificationWithIcon('success')}
+      <Dropdown open={menuVisible} menu={{ items }} overlayStyle={{ left: `${position.x}px`, top: `${position.y}px` }}><></></Dropdown>
+      <Table<User> rowKey={(user: User) => user.id} key='table' className={styles.Table} columns={columns}
+        dataSource={users} pagination={false}
+        onRow={(record, rowIndex) => {
+          return {
+            onContextMenu: (event) => {
+              event.preventDefault()
+              setMenuVisible(true)
+              setPosition({ x: event.clientX, y: event.clientY })
+            }
+          };
+        }}
+      />
     </>
   )
 }

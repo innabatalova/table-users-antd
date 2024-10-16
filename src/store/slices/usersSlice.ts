@@ -49,9 +49,9 @@ export const fetchUsers = createAsyncThunk(
       }
 
       if (response.data.total_pages > 1) {
-        const axiosUsersDataAllPage = []
+        const axiosUsersDataAllPage: AxiosPromise[] = []
         for (let i = 1; i <= response.data.total_pages; i++) {
-          axiosUsersDataAllPage.push(axios.get<any>(handlerUsersApi + i))
+          axiosUsersDataAllPage.push(axios.get<usersData>(handlerUsersApi + i))
         }
         const responseAllPage = await Promise.all(axiosUsersDataAllPage)
         let responseAll: usersData[] = []
