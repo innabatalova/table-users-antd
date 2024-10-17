@@ -1,10 +1,12 @@
 import { FC, ReactElement, useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
-import { Table, Skeleton, notification, Input, Space, Button, Dropdown } from 'antd'
+import { Table, Skeleton, notification, Input, Space, Button } from 'antd'
 import type { TableColumnsType, TableColumnType, MenuProps } from 'antd'
 import type { FilterDropdownProps } from 'antd/es/table/interface'
-import { SearchOutlined, MenuOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons'
+import { SearchOutlined } from '@ant-design/icons'
+
+import ContextMenu from './components/ContextMenu/ContextMenu'
 
 import type { RootState, AppDispatch } from './store/store'
 import { fetchUsers } from './store/slices/usersSlice'
@@ -34,9 +36,10 @@ const App: FC = (): ReactElement => {
   }, [dispatch])
 
 
+  const [flagNotification, setFlagNotification] = useState<boolean>(false)
   const [api, contextHolder] = notification.useNotification()
 
-  const openNotificationWithIcon = (type: NotificationType, error?: {}): void => {
+  const openNotificationWithIcon = (type: NotificationType, error?: unknown): void => {
     switch (type) {
       case 'error':
         api[type]({
@@ -53,11 +56,11 @@ const App: FC = (): ReactElement => {
             description:
               'Данные пользователей успешно получены',
           })
+          setFlagNotification(true)
         }, 2000)
         break
     }
   }
-
 
   const handleSearch = (confirm: FilterDropdownProps['confirm']) => {
     confirm()
@@ -108,29 +111,6 @@ const App: FC = (): ReactElement => {
           .includes((value as string).toLowerCase())
     })
 
-  const onClick: MenuProps['onClick'] = (e) => {
-    console.log(e)
-  }
-
-  const items: MenuProps["items"] = [
-    {
-      key: "menu",
-      type: "group",
-      children: [
-        {
-          key: 1,
-          label: 'Редактировать',
-          icon: <EditOutlined style={{ color: "#1677ff" }} />
-        },
-        {
-          key: 2,
-          label: 'Удалить',
-          icon: <DeleteOutlined style={{ color: "#f5222d" }} />
-        },
-      ]
-    }
-  ]
-
   const columns: TableColumnsType<User> = [
     {
       title: 'ID',
@@ -163,28 +143,49 @@ const App: FC = (): ReactElement => {
     }
   ]
 
-  const [menuVisible, setMenuVisible] = useState(false)
-  const [position, setPosition] = useState({x: 0,y: 0})
+  interface IPosProps {
+    x: number,
+    y: number
+  }
+
+  const [menuVisible, setMenuVisible] = useState<boolean>(false)
+  const [position, setPosition] = useState<IPosProps>({ x: 0, y: 0 })
+  const [rowData, setRowData] = useState<User | null>(null)
+
+  const getDeleteUser = (dataDeleteUser: User | null) => {
+    api.info({
+      key: 'delete',
+      message: 'Удаление пользователя',
+      description:
+        `Пользователь ${dataDeleteUser?.first_name ?? 'Пользователь'} ${dataDeleteUser?.last_name ?? 'Пользователь'} удален`,
+    })
+  }
 
   return (
     <>
       {contextHolder}
-      {status === 'pending' && <div><span>Загрузка</span> <br /> <Skeleton active /></div>}
       {error !== null && openNotificationWithIcon('error', error)}
-      {status === 'fulfilled' && openNotificationWithIcon('success')}
-      <Dropdown open={menuVisible} menu={{ items }} overlayStyle={{ left: `${position.x}px`, top: `${position.y}px` }}><></></Dropdown>
-      <Table<User> rowKey={(user: User) => user.id} key='table' className={styles.Table} columns={columns}
-        dataSource={users} pagination={false}
-        onRow={(record, rowIndex) => {
-          return {
-            onContextMenu: (event) => {
-              event.preventDefault()
-              setMenuVisible(true)
-              setPosition({ x: event.clientX, y: event.clientY })
-            }
-          };
-        }}
-      />
+      {status === 'pending' ? <div><span>Загрузка</span> <br /> <Skeleton active /></div> :
+        [!flagNotification && openNotificationWithIcon('success'),
+        <>
+          {contextHolder}
+          <ContextMenu open={menuVisible} pos={position} rowData={rowData} getDeleteUser={getDeleteUser} />
+          <Table<User> rowKey={(user: User) => user.id} key='table' className={styles.Table} columns={columns}
+            dataSource={users} pagination={false}
+            onRow={(record) => {
+              return {
+                onContextMenu: (event) => {
+                  event.preventDefault()
+                  setMenuVisible(true)
+                  setPosition({ x: event.clientX, y: event.clientY })
+                  setRowData(record)
+                }
+              }
+            }}
+          />
+        </>
+        ]
+      }
     </>
   )
 }

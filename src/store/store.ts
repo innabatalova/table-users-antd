@@ -1,12 +1,10 @@
 import { configureStore } from '@reduxjs/toolkit'
 
 import usersReducer from './slices/usersSlice'
-import errorSlice from './slices/errorSlice'
 
 const store = configureStore({
   reducer: {
-    users: usersReducer,
-    error: errorSlice
+    users: usersReducer
   }
 })
 

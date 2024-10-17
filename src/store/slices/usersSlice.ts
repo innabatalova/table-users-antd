@@ -70,7 +70,11 @@ export const fetchUsers = createAsyncThunk(
 const usersSlice = createSlice({
   name: 'users',
   initialState,
-  reducers: {},
+  reducers: {
+    deleteUserStore(state: typeof initialState, action: PayloadAction<number | null>) {
+      state.users = state.users.filter(item => item.id !== action.payload)
+    }
+  },
   extraReducers: (builder: ActionReducerMapBuilder<IInitialState>) => {
     builder.addCase(fetchUsers.pending, (state: typeof initialState) => {
       state.status = 'pending'
@@ -87,6 +91,7 @@ const usersSlice = createSlice({
   },
 })
 
+export const { deleteUserStore } = usersSlice.actions
 export default usersSlice.reducer
 
 
