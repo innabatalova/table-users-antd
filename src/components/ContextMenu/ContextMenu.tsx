@@ -1,8 +1,8 @@
 import { FC, ReactElement } from 'react'
 import { useDispatch } from 'react-redux'
 
-import { Dropdown } from 'antd'
 import type { MenuProps } from 'antd'
+import { Dropdown } from 'antd'
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons'
 
 import axios, { AxiosError } from 'axios'
@@ -10,20 +10,8 @@ import axios, { AxiosError } from 'axios'
 import handlerDeleteUserApi from '../../api/deleteUserApi'
 import { deleteUserStore } from '../../store/slices/usersSlice'
 
-interface User {
-  id: number,
-  email: string,
-  first_name: string,
-  last_name: string,
-  avatar: string
-}
+import { IContextMenuProps } from './interface'
 
-interface IContextMenuProps {
-  open: boolean,
-  pos: { x: number; y: number },
-  rowData: User | null,
-  getDeleteUser: (data: User | null)=> void
-}
 
 const ContextMenu: FC<IContextMenuProps> = ({ open, pos, rowData, getDeleteUser }): ReactElement => {
   const dispatch = useDispatch()

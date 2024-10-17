@@ -3,31 +3,8 @@ import handlerUsersApi from '../../api/usersApi'
 
 import axios, { AxiosError, type AxiosPromise } from 'axios'
 
-interface userData {
-  id: number,
-  email: string,
-  first_name: string,
-  last_name: string,
-  avatar: string
-}
-
-interface usersData {
-  page: number,
-  per_page: number,
-  total: number,
-  total_pages: number,
-  data: userData[],
-  support: {
-    url: string,
-    text: string
-  }
-}
-
-interface IInitialState {
-  status: 'pending' | 'fulfilled' | 'rejected' | null,
-  users: userData[],
-  error: unknown | null
-}
+import { User } from '../../interface'
+import { IUsersData, IInitialState } from './interface'
 
 const initialState: IInitialState = {
   status: null,
@@ -36,7 +13,7 @@ const initialState: IInitialState = {
 }
 
 const axiosUsersDataFirstPage = (): AxiosPromise =>
-  axios.get<usersData>(handlerUsersApi + '1')
+  axios.get<IUsersData>(handlerUsersApi + '1')
 
 export const fetchUsers = createAsyncThunk(
   'users/fetchUsers',
@@ -51,10 +28,10 @@ export const fetchUsers = createAsyncThunk(
       if (response.data.total_pages > 1) {
         const axiosUsersDataAllPage: AxiosPromise[] = []
         for (let i = 1; i <= response.data.total_pages; i++) {
-          axiosUsersDataAllPage.push(axios.get<usersData>(handlerUsersApi + i))
+          axiosUsersDataAllPage.push(axios.get<IUsersData>(handlerUsersApi + i))
         }
         const responseAllPage = await Promise.all(axiosUsersDataAllPage)
-        let responseAll: usersData[] = []
+        let responseAll: IUsersData[] = []
         response.data = responseAll.concat(...responseAllPage.map(item => item.data.data))
       }
 
@@ -80,7 +57,7 @@ const usersSlice = createSlice({
       state.status = 'pending'
       state.error = null
     })
-    builder.addCase(fetchUsers.fulfilled, (state: typeof initialState, action: PayloadAction<userData[]>) => {
+    builder.addCase(fetchUsers.fulfilled, (state: typeof initialState, action: PayloadAction<User[]>) => {
       state.status = 'fulfilled'
       state.users = action.payload
     })

@@ -1,33 +1,23 @@
 import { FC, ReactElement, useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
-import { Table, Skeleton, notification, Input, Space, Button } from 'antd'
-import type { TableColumnsType, TableColumnType, MenuProps } from 'antd'
+import type { TableColumnsType, TableColumnType } from 'antd'
 import type { FilterDropdownProps } from 'antd/es/table/interface'
+import { Table, notification, Input, Space, Button, Row, Col } from 'antd'
 import { SearchOutlined } from '@ant-design/icons'
 
+import Loader from './components/Loader/Loader'
 import ContextMenu from './components/ContextMenu/ContextMenu'
 
 import type { RootState, AppDispatch } from './store/store'
 import { fetchUsers } from './store/slices/usersSlice'
 
-import styles from './App.module.scss'
+import { User, IPosProps } from './interface'
+import { DataIndex, NotificationType } from './types'
 
-interface User {
-  id: number,
-  email: string,
-  first_name: string,
-  last_name: string,
-  avatar: string
-}
-
-type DataIndex = keyof User
-
-type NotificationType = 'success' | 'error'
-
-type MenuItem = Required<MenuProps>['items'][number]
 
 const App: FC = (): ReactElement => {
+  //get data
   const dispatch = useDispatch<AppDispatch>()
   const { status, users, error } = useSelector((state: RootState) => state.users)
 
@@ -36,8 +26,9 @@ const App: FC = (): ReactElement => {
   }, [dispatch])
 
 
-  const [flagNotification, setFlagNotification] = useState<boolean>(false)
+  //notification
   const [api, contextHolder] = notification.useNotification()
+  const [flagNotification, setFlagNotification] = useState<boolean>(false)
 
   const openNotificationWithIcon = (type: NotificationType, error?: unknown): void => {
     switch (type) {
@@ -62,10 +53,10 @@ const App: FC = (): ReactElement => {
     }
   }
 
-  const handleSearch = (confirm: FilterDropdownProps['confirm']) => {
+  //columns
+  const handleSearch = (confirm: FilterDropdownProps['confirm']): void=> {
     confirm()
   }
-
   const handleReset = (clearFilters: () => void) => {
     clearFilters()
   }
@@ -143,21 +134,17 @@ const App: FC = (): ReactElement => {
     }
   ]
 
-  interface IPosProps {
-    x: number,
-    y: number
-  }
-
+  //ContextMenu
   const [menuVisible, setMenuVisible] = useState<boolean>(false)
   const [position, setPosition] = useState<IPosProps>({ x: 0, y: 0 })
   const [rowData, setRowData] = useState<User | null>(null)
 
-  const getDeleteUser = (dataDeleteUser: User | null) => {
+  const getDeleteUser = (dataDeleteUser: User | null): void => {
     api.info({
-      key: 'delete',
+      key: `${dataDeleteUser?.id ?? 'delete'}`,
       message: 'Удаление пользователя',
       description:
-        `Пользователь ${dataDeleteUser?.first_name ?? 'Пользователь'} ${dataDeleteUser?.last_name ?? 'Пользователь'} удален`,
+        `Пользователь ${dataDeleteUser?.first_name ?? ''} ${dataDeleteUser?.last_name ?? ''} удален`,
     })
   }
 
@@ -165,25 +152,25 @@ const App: FC = (): ReactElement => {
     <>
       {contextHolder}
       {error !== null && openNotificationWithIcon('error', error)}
-      {status === 'pending' ? <div><span>Загрузка</span> <br /> <Skeleton active /></div> :
+      {status === 'pending' ? <Loader /> :
         [!flagNotification && openNotificationWithIcon('success'),
-        <>
-          {contextHolder}
-          <ContextMenu open={menuVisible} pos={position} rowData={rowData} getDeleteUser={getDeleteUser} />
-          <Table<User> rowKey={(user: User) => user.id} key='table' className={styles.Table} columns={columns}
-            dataSource={users} pagination={false}
-            onRow={(record) => {
-              return {
-                onContextMenu: (event) => {
-                  event.preventDefault()
-                  setMenuVisible(true)
-                  setPosition({ x: event.clientX, y: event.clientY })
-                  setRowData(record)
+        <Row >
+          <Col span={24}>
+            <ContextMenu open={menuVisible} pos={position} rowData={rowData} getDeleteUser={getDeleteUser} />
+            <Table<User> rowKey={(user: User) => user.id} key='table' columns={columns}
+              dataSource={users} pagination={false}
+              onRow={(record) => {
+                return {
+                  onContextMenu: (event) => {
+                    event.preventDefault()
+                    setMenuVisible(true)
+                    setPosition({ x: event.clientX, y: event.clientY })
+                    setRowData(record)
+                  }
                 }
-              }
-            }}
-          />
-        </>
+              }}
+            /></Col>
+        </Row>
         ]
       }
     </>
