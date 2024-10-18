@@ -1,10 +1,10 @@
 import { createSlice, createAsyncThunk, ActionReducerMapBuilder, PayloadAction } from '@reduxjs/toolkit'
-import handlerUsersApi from '../../api/usersApi'
-
 import axios, { AxiosError, type AxiosPromise } from 'axios'
 
 import { User } from '../../interface'
 import { IUsersData, IInitialState } from './interface'
+
+import handlerUsersApi from '../../api/usersApi'
 
 const initialState: IInitialState = {
   status: null,

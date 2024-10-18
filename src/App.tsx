@@ -1,20 +1,18 @@
 import { FC, ReactElement, useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
+import { Table, notification, Row, Col } from 'antd'
 
-import type { TableColumnsType, TableColumnType } from 'antd'
-import type { FilterDropdownProps } from 'antd/es/table/interface'
-import { Table, notification, Input, Space, Button, Row, Col } from 'antd'
-import { SearchOutlined } from '@ant-design/icons'
+import type { TableColumnsType } from 'antd'
+import type { RootState, AppDispatch } from './store/store'
+import { User, IPosProps } from './interface'
 
 import Loader from './components/Loader/Loader'
 import ContextMenu from './components/ContextMenu/ContextMenu'
 
-import type { RootState, AppDispatch } from './store/store'
 import { fetchUsers } from './store/slices/usersSlice'
 
-import { User, IPosProps } from './interface'
-import { DataIndex, NotificationType } from './types'
-
+import Notification from './utils/notification'
+import { getColumnSearchProps } from './utils/columnsSearch'
 
 const App: FC = (): ReactElement => {
   //get data
@@ -25,83 +23,20 @@ const App: FC = (): ReactElement => {
     dispatch(fetchUsers())
   }, [dispatch])
 
-
   //notification
   const [api, contextHolder] = notification.useNotification()
   const [flagNotification, setFlagNotification] = useState<boolean>(false)
 
-  const openNotificationWithIcon = (type: NotificationType, error?: unknown): void => {
-    switch (type) {
-      case 'error':
-        api[type]({
-          key: type,
-          message: 'Ошибка получения данных',
-          description: `${error}`
-        })
-        break
-      case 'success':
-        setTimeout(() => {
-          api[type]({
-            key: type,
-            message: 'Получение списка пользователей',
-            description:
-              'Данные пользователей успешно получены',
-          })
-          setFlagNotification(true)
-        }, 2000)
-        break
-    }
+  //context menu
+  const [menuVisible, setMenuVisible] = useState<boolean>(false)
+  const [position, setPosition] = useState<IPosProps>({ x: 0, y: 0 })
+  const [rowData, setRowData] = useState<User | null>(null)
+
+  const getDeleteUser = (dataDeleteUser: User | null): void => {
+    Notification(api, 'info', null, dataDeleteUser)
   }
 
   //columns
-  const handleSearch = (confirm: FilterDropdownProps['confirm']): void=> {
-    confirm()
-  }
-  const handleReset = (clearFilters: () => void) => {
-    clearFilters()
-  }
-
-  const getColumnSearchProps = (dataIndex: DataIndex): TableColumnType<User> => (
-    {
-      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
-        <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
-          <Input
-            placeholder={`Search ${dataIndex}`}
-            value={selectedKeys[0]}
-            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
-            onPressEnter={() => handleSearch(confirm)}
-            style={{ marginBottom: 8, display: 'block' }}
-          />
-          <Space>
-            <Button
-              type="primary"
-              onClick={() => handleSearch(confirm)}
-              icon={<SearchOutlined />}
-              size="small"
-              style={{ width: 90 }}
-            >
-              Search
-            </Button>
-            <Button
-              onClick={() => clearFilters && handleReset(clearFilters)}
-              size="small"
-              style={{ width: 90 }}
-            >
-              Reset
-            </Button>
-          </Space>
-        </div>
-      ),
-      filterIcon: (filtered: boolean) => (
-        <SearchOutlined style={{ color: filtered ? '#1677ff' : undefined }} />
-      ),
-      onFilter: (value, record) =>
-        record[dataIndex]
-          .toString()
-          .toLowerCase()
-          .includes((value as string).toLowerCase())
-    })
-
   const columns: TableColumnsType<User> = [
     {
       title: 'ID',
@@ -134,33 +69,20 @@ const App: FC = (): ReactElement => {
     }
   ]
 
-  //ContextMenu
-  const [menuVisible, setMenuVisible] = useState<boolean>(false)
-  const [position, setPosition] = useState<IPosProps>({ x: 0, y: 0 })
-  const [rowData, setRowData] = useState<User | null>(null)
-
-  const getDeleteUser = (dataDeleteUser: User | null): void => {
-    api.info({
-      key: `${dataDeleteUser?.id ?? 'delete'}`,
-      message: 'Удаление пользователя',
-      description:
-        `Пользователь ${dataDeleteUser?.first_name ?? ''} ${dataDeleteUser?.last_name ?? ''} удален`,
-    })
-  }
-
   return (
     <>
       {contextHolder}
-      {error !== null && openNotificationWithIcon('error', error)}
+      {error !== null && Notification(api, 'error', error)}
       {status === 'pending' ? <Loader /> :
-        [!flagNotification && openNotificationWithIcon('success'),
-        <Row >
+        [!flagNotification && Notification(api, 'success', null, null, setFlagNotification),
+        <Row>
           <Col span={24}>
             <ContextMenu open={menuVisible} pos={position} rowData={rowData} getDeleteUser={getDeleteUser} />
             <Table<User> rowKey={(user: User) => user.id} key='table' columns={columns}
               dataSource={users} pagination={false}
               onRow={(record) => {
                 return {
+                  onClick: () => { setMenuVisible(false) },
                   onContextMenu: (event) => {
                     event.preventDefault()
                     setMenuVisible(true)
