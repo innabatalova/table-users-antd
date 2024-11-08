@@ -42,6 +42,7 @@ const App: FC = (): ReactElement => {
       title: 'ID',
       dataIndex: 'id',
       key: 'id',
+      width: 80,
       defaultSortOrder: 'ascend',
       sorter: (a, b) => a.id - b.id,
       ...getColumnSearchProps('id')
@@ -73,7 +74,7 @@ const App: FC = (): ReactElement => {
     <>
       {contextHolder}
       {error !== null && Notification(api, 'error', error)}
-      {status === 'pending' ? <Loader /> :
+      {status === 'pending' && error == null ? <Loader /> :
         [!flagNotification && Notification(api, 'success', null, null, setFlagNotification),
         <Row>
           <Col span={24}>
