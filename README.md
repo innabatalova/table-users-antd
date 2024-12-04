@@ -23,3 +23,6 @@
 
 "$" npm run dev - запуск проекта
 
+# Link to deploy
+https://dreamy-shortbread-013314.netlify.app/
+
